@@ -20,6 +20,17 @@ class Confirmation {
   const ISLAND_CLASS = 'gfct-tracking-data';
 
   /**
+   * Name of the plugin's own dataLayer event.
+   *
+   * Deliberately not the GA4 lead event name: Google Tag Manager exposes
+   * the gtag() commands sent alongside as events of their own name, so a
+   * trigger on the lead event name would otherwise match twice.
+   *
+   * @var string
+   */
+  const DATALAYER_EVENT = 'gravityforms_conversion';
+
+  /**
    * @implements gform_confirmation
    */
   public static function injectDataIsland($confirmation, $form, $entry, $ajax) {
@@ -71,7 +82,10 @@ class Confirmation {
    * only shape what gets fired once opted in.
    */
   protected static function buildPayload($form) {
-    $conversionId = trim((string) rgar($form, 'googleAdsConversionId'));
+    // Google Ads shows the Conversion ID with or without its "AW-" prefix,
+    // depending on the screen it is copied from. GTM's Google Ads Conversion
+    // Tracking tag expects the bare number, gtag() the prefixed form.
+    $conversionId = preg_replace('@^AW-@i', '', trim((string) rgar($form, 'googleAdsConversionId')));
     $conversionLabel = trim((string) rgar($form, 'googleAdsConversionLabel'));
     if ($conversionId === '' || $conversionLabel === '') {
       return NULL;
@@ -93,13 +107,15 @@ class Confirmation {
     }
 
     return [
-      'event' => $eventName,
+      'event' => static::DATALAYER_EVENT,
+      'lead_event' => $eventName,
       'form_id' => (int) rgar($form, 'id'),
       'form_title' => (string) rgar($form, 'title'),
       'value' => $value,
       'currency' => $currency,
       'google_ads_conversion_id' => $conversionId,
       'google_ads_conversion_label' => $conversionLabel,
+      'google_ads_send_to' => 'AW-' . $conversionId . '/' . $conversionLabel,
     ];
   }
 

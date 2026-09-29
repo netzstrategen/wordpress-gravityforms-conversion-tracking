@@ -4,10 +4,23 @@
  * This file runs only in the top-level document, never inside Gravity
  * Forms' hidden AJAX iframe: it reads the inert JSON "data island" that
  * Netzstrategen\GravityformsConversionTracking\Confirmation appends to a
- * form's text confirmation, and only then calls dataLayer/gtag.
+ * form's text confirmation, and only then pushes to the dataLayer.
  */
 (function ($) {
   'use strict';
+
+  // Google tags process gtag() commands from the dataLayer, whether they are
+  // embedded via gtag.js or deployed via Google Tag Manager - in the latter
+  // case, the page usually does not define window.gtag itself. A command
+  // must be pushed as an Arguments object, not as an array.
+  function gtagCommand() {
+    if (typeof window.gtag === 'function') {
+      window.gtag.apply(window, arguments);
+    }
+    else {
+      window.dataLayer.push(arguments);
+    }
+  }
 
   function fireEvent(island) {
     if (island.getAttribute('data-gfct-fired')) {
@@ -24,21 +37,23 @@
     }
 
     window.dataLayer = window.dataLayer || [];
+
+    // Plugin-specific event for custom tags and non-Google tools.
     window.dataLayer.push(payload);
 
-    if (typeof window.gtag === 'function') {
-      // GA4 side - reporting only, no Ads attribution.
-      window.gtag('event', payload.event, {
-        value: payload.value,
-        currency: payload.currency
-      });
-      // Ads side - the actual conversion action, explicit destination.
-      window.gtag('event', 'conversion', {
-        send_to: payload.google_ads_conversion_id + '/' + payload.google_ads_conversion_label,
-        value: payload.value,
-        currency: payload.currency
-      });
-    }
+    // GA4: recommended lead event, sent to all configured Google tags.
+    gtagCommand('event', payload.lead_event, {
+      value: payload.value,
+      currency: payload.currency
+    });
+
+    // Google Ads: the conversion action itself. Only sent once the Google tag
+    // for the Ads account is loaded, i.e. subject to its consent handling.
+    gtagCommand('event', 'conversion', {
+      send_to: payload.google_ads_send_to,
+      value: payload.value,
+      currency: payload.currency
+    });
   }
 
   function fireForForm(formId) {

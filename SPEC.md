@@ -22,9 +22,10 @@ selectable per form) plus the form's Ads conversion data — but critically,
 never inside Gravity Forms' hidden AJAX iframe** (see Approach §3 — this
 isn't just a privacy nicety, it also fixes a genuine double-firing bug the
 naive "inline script in the confirmation HTML" approach would have caused).
-A single, generic GTM tag (built once, manually, using GTM Data Layer
-Variables) then handles Ads conversions for every form from then on — no
-more per-form GTM changes.
+Both are sent as `gtag()` commands, which the site's existing Google tags
+process directly — whether embedded via `gtag.js` or deployed via GTM — so
+no per-form GTM tags, triggers or thank-you pages are needed anymore (see
+§4 and §5; revised in 1.1.0).
 
 The plugin must not depend on this site's `custom` plugin or `shop` theme,
 since smaller sites (running Google Site Kit, sometimes without any GTM
@@ -32,8 +33,8 @@ container at all) have the identical need and should be able to reuse the
 same plugin folder as-is.
 
 Confirmed with the user: plugin lives in this repo for now, namespace
-`Netzstrategen\GravityformsConversionTracking`; it emits both a dataLayer
-push (GTM) and direct `gtag()` calls (non-GTM/Site Kit fallback); there's no
+`Netzstrategen\GravityformsConversionTracking`; it emits `gtag()` commands
+for GA4 and Google Ads plus a plugin-specific dataLayer event; there's no
 separate "enable tracking" checkbox — filling in both Conversion ID and
 Label *is* the opt-in; AJAX submission (the modern GF default) is the
 primary target, non-AJAX is supported by the same mechanism at no extra
@@ -81,7 +82,7 @@ field-naming convention:
 
 | Field name | Type | Default | Notes |
 |---|---|---|---|
-| `googleAdsConversionId` | text | — | e.g. `AW-123456789` |
+| `googleAdsConversionId` | text | — | e.g. `123456789`; an `AW-` prefix is optional and stripped (see §4) |
 | `googleAdsConversionLabel` | text | — | e.g. `AbC-D_efG0h1I2j3K4` |
 | `leadEventName` | select | `generate_lead` | choices: `generate_lead` ("General inquiry"), `qualify_lead` ("Qualified sales inquiry"), `working_lead` ("Customer support contact") — see §6 for why these three |
 | `leadValue` | text | `0` | monetary value; `0` is a valid, accepted value — see gotcha below |
@@ -135,7 +136,7 @@ execution heads off.
 appends an **inert** data island, never an executable script:
 ```html
 <script type="application/json" class="gfct-tracking-data" data-form-id="12">
-{"event":"generate_lead","form_id":12,"form_title":"...","value":0,"currency":"EUR","google_ads_conversion_id":"AW-123456789","google_ads_conversion_label":"AbC-D_efG0h1I2j3K4"}
+{"event":"gravityforms_conversion","lead_event":"generate_lead","form_id":12,"form_title":"...","value":0,"currency":"EUR","google_ads_conversion_id":"123456789","google_ads_conversion_label":"AbC-D_efG0h1I2j3K4","google_ads_send_to":"AW-123456789/AbC-D_efG0h1I2j3K4"}
 </script>
 ```
 `type="application/json"` is never parsed/executed as JS by any browser, in
@@ -163,29 +164,12 @@ firing, **always in the genuine top-level window/document**:
 - Marks a processed island (`data-gfct-fired`) to stay idempotent.
 - One shared function then does the actual `window.dataLayer.push(...)` (no
   `window.parent` trickery needed anymore — this code only ever runs in the
-  top-level document) and, if `window.gtag` exists, the `gtag()` fallback
-  calls (see §4).
+  top-level document) and sends the `gtag()` commands (see §4).
 
 ### 4. Event payload + gtag calls
 
-**dataLayer push** (GTM path):
-```json
-{
-  "event": "generate_lead",
-  "form_id": 12,
-  "form_title": "Kontaktformular Werbemarkt",
-  "value": 0,
-  "currency": "EUR",
-  "google_ads_conversion_id": "AW-123456789",
-  "google_ads_conversion_label": "AbC-D_efG0h1I2j3K4"
-}
-```
-`event` is whichever of `generate_lead`/`qualify_lead`/`working_lead` was
-selected per form (see §6 for GA4's exact documented parameters for these).
-
-**gtag fallback** (only if `window.gtag` exists — Site Kit / gtag.js-only
-installs, no GTM container). Two separate calls are required, not one —
-see §7 for why:
+**gtag commands** — the primary path for GA4 and Google Ads. Two separate
+commands are required, not one — see §7 for why:
 ```js
 // GA4 side — reporting only, no Ads attribution.
 gtag('event', 'generate_lead', { value: 0, currency: 'EUR' });
@@ -196,6 +180,50 @@ gtag('event', 'conversion', {
   currency: 'EUR',
 });
 ```
+The lead event name is whichever of `generate_lead`/`qualify_lead`/
+`working_lead` was selected per form (see §6 for GA4's documented
+parameters).
+
+*Revised in 1.1.0*: 1.0.0 sent these only if `window.gtag` existed, i.e. on
+`gtag.js`/Site Kit installs. On GTM-only sites the page does not define
+`window.gtag`, so neither GA4 nor Google Ads received anything unless
+per-site GTM tags were built for the dataLayer event. But Google tags
+deployed via GTM process `gtag()` commands in the shared `dataLayer` just
+like `gtag.js` does — verified on a production GTM site: a
+`gtag('get', 'G-…', 'session_id', callback)` command pushed as
+`dataLayer.push(arguments)` was answered by the GTM-deployed GA4 Google tag,
+although `window.gtag` was undefined. The script therefore always sends the
+commands, via `window.gtag` if defined, otherwise by pushing the
+`arguments` object to `window.dataLayer` (gtag only recognizes `Arguments`
+objects, not arrays). The Ads conversion is only sent once a Google tag for
+the Ads account (`AW-…`) is loaded, so it inherits that tag's consent
+handling.
+
+**Conversion ID normalization** (1.1.0): Google Ads shows the ID with or
+without the `AW-` prefix, depending on the screen. `buildPayload()` strips
+an optional prefix; the dataLayer carries the bare number (what GTM's
+Google Ads Conversion Tracking tag expects), and `google_ads_send_to` the
+prefixed `AW-{id}/{label}` for `gtag()`.
+
+**dataLayer push** — plugin-specific event for custom tags and non-Google
+tools:
+```json
+{
+  "event": "gravityforms_conversion",
+  "lead_event": "generate_lead",
+  "form_id": 12,
+  "form_title": "Kontaktformular",
+  "value": 0,
+  "currency": "EUR",
+  "google_ads_conversion_id": "123456789",
+  "google_ads_conversion_label": "AbC-D_efG0h1I2j3K4",
+  "google_ads_send_to": "AW-123456789/AbC-D_efG0h1I2j3K4"
+}
+```
+In 1.0.0 its `event` was the lead event name itself. Renamed in 1.1.0,
+because GTM also exposes each `gtag('event', …)` command as a GTM event of
+the same name — a Custom Event trigger on `generate_lead` would otherwise
+match twice per submission.
 
 Build the JSON island through a single `wp_json_encode($payload, JSON_HEX_TAG | JSON_HEX_AMP)`
 call (the same flags Gravity Forms core itself uses for its own inline
@@ -204,23 +232,26 @@ form title) can break out of the surrounding `<script>` tag. No entry/user-
 submitted field values are ever placed in the payload, only form-level
 settings plus form id/title — keep it that way.
 
-### 5. One-time GTM configuration (manual, outside this plugin/repo)
+### 5. Tag setup (manual, outside this plugin)
 
-Document this for the user as a required follow-up once the plugin is live:
-1. Data Layer Variables: `google_ads_conversion_id`, `google_ads_conversion_label`,
-   `value`, `currency` (plus optionally `form_id`/`form_title` for debugging).
-2. A Custom Event trigger matching event name(s) `generate_lead` OR
-   `qualify_lead` OR `working_lead` (a "Custom Event" trigger supports a
-   regex match, e.g. `^(generate|qualify|working)_lead$`).
-3. One generic "Google Ads Conversion Tracking" tag, Conversion ID/Label/
-   Value/Currency wired to the Data Layer Variables above, firing on that
-   trigger — replaces every current per-form tag.
-4. A GA4 Event tag (event name = `{{Event}}`, i.e. dynamically the same
-   name that fired) bound to the same trigger, so GA4 actually receives
-   `generate_lead`/`qualify_lead`/`working_lead` — don't assume the existing
-   GA4 Configuration tag's "send all events" setting already covers this;
-   verify it.
-5. Verify everything in GTM Preview mode before publishing (see §8).
+*Revised in 1.1.0.* No event-specific tags, triggers or variables are
+needed; the site only needs Google tags that most setups already have (the
+exact steps are in readme.txt, "Tracking setup"):
+1. A Google tag for the Google Ads account (`AW-…`), on all pages subject
+   to consent.
+2. A Conversion Linker (GTM only; `gtag.js` stores click IDs itself). It has
+   no conversion settings and takes no variables.
+3. A Google tag for GA4 (`G-…`).
+
+No "Google Ads Conversion Tracking" or "GA4 Event" tags for the plugin's
+events — they would count every lead twice. Per-form conversion tags that
+fired on thank-you pages become obsolete once a form uses this plugin with
+a text confirmation.
+
+The 1.0.0 approach — one generic Google Ads Conversion Tracking tag plus a
+GA4 Event tag on a Custom Event trigger, fed by Data Layer Variables — is
+still possible via the `gravityforms_conversion` event for sites without
+Google tags, but is no longer the recommended setup.
 
 ### 6. Which GA4 lead events, and their parameters
 
@@ -249,10 +280,10 @@ complementary approach, but is slower (1-3 day data latency) and should
 **not** be used as a duplicate/second conversion action for the *same* form
 submission the native Ads tag already tracks — that double-counts
 conversions in the Ads account. This plugin's design already matches the
-recommended shape: a native Ads conversion tag (fed by explicit Conversion
-ID/Label from our dataLayer) plus a separate GA4 event for GA4's own
-reporting/audiences — just make sure nobody *also* sets up a GA4→Ads Key
-Event import for `generate_lead` once the native tag from §5 is live.
+recommended shape: a native Ads conversion (a direct `gtag('event',
+'conversion', {send_to})` command with the form's Conversion ID/Label) plus
+a separate GA4 event for GA4's own reporting/audiences — just make sure
+nobody *also* sets up a GA4→Ads Key Event import for the lead event.
 
 **Conversion Linker and how parameters get "picked up" by Ads**: Conversion
 Linker only captures the ad-click identifier (`gclid`/`gbraid`/`wbraid` from
@@ -261,12 +292,11 @@ nothing to do with reading our event's parameters. It runs continuously,
 independent of any lead event, so that *whenever* a conversion tag later
 fires, Ads can attribute it back to the click that brought the visitor in.
 The actual Conversion ID/Label/Value/Currency are never "auto-picked-up" —
-they must always be explicitly supplied to the conversion tag/call (via GTM
-Data Layer Variables, as designed in §5, or via the explicit `gtag('event',
-'conversion', {...})` params in the fallback path). Conversion Linker and
-our dataLayer push solve two different problems that combine at
-conversion-tag-fire-time: "which click do we credit" (Linker) and "what
-happened, how much is it worth" (our event).
+they must always be explicitly supplied to the conversion call — here via
+the explicit `gtag('event', 'conversion', {...})` params (§4). Conversion
+Linker and our conversion command solve two different problems that combine
+at conversion time: "which click do we credit" (Linker) and "what happened,
+how much is it worth" (our event).
 
 **Non-GTM / Site Kit-only sites**: when Site Kit connects a Google Ads
 account without a GTM container, it still loads a single `gtag.js` snippet
@@ -275,9 +305,10 @@ if linked). That `AW-...` config call *is* the gtag.js equivalent of
 Conversion Linker — it automatically enables auto-tagging/click-ID capture
 on load, no separate tag needed. But, exactly as with GTM, the actual
 conversion still needs an explicit event call with `send_to` set to that
-site's Conversion ID/Label — which is exactly what the `gtag()` fallback in
-§4 provides, making this plugin work identically well on GTM and non-GTM
-(Site Kit) sites without extra per-site logic.
+site's Conversion ID/Label — which is exactly what the `gtag()` commands in
+§4 provide. Since GTM-deployed Google tags process the same commands, the
+plugin works identically on GTM and non-GTM (Site Kit) sites without extra
+per-site logic.
 
 ### 8. Verification
 
@@ -294,15 +325,17 @@ site's Conversion ID/Label — which is exactly what the `gtag()` fallback in
 3. Repeat with AJAX off on a second form — confirm the same single dataLayer
    push happens via the immediate-scan path, no `gform_confirmation_loaded`
    needed.
-4. Stub `window.gtag = console.log` before a test submission and confirm
-   both fallback calls fire (`generate_lead` and `conversion`, with the
-   right `send_to`/`value`/`currency`).
+4. Confirm both `gtag()` commands (lead event and `conversion`, with the
+   right `send_to`/`value`/`currency`) land in `window.dataLayer` as
+   `Arguments` objects when the page does not define `window.gtag`, and go
+   through `window.gtag` when it does.
 5. Leave Conversion ID/Label empty on a form and confirm no data island and
    no dataLayer push happen at all (opt-in gate).
-6. Once the one-time GTM setup (§5) is live, use GTM Preview mode: submit
-   the test form, confirm the lead event appears as fired, the Data Layer
-   Variables resolve correctly, and both the Ads Conversion tag and GA4
-   Event tag show as Fired — exactly once each.
+6. With the Google tags from §5 in place and consent granted, use GTM
+   Preview mode (Tag Assistant): submit the test form, confirm the events
+   `gravityforms_conversion`, the lead event and `conversion` appear once
+   each, and the Google Ads and GA4 destinations list the corresponding
+   hits.
 7. Repeat on a second form with different Conversion ID/Label/value/currency
    with zero further GTM changes — the core acceptance criterion.
 8. Confirm the existing, still-active
