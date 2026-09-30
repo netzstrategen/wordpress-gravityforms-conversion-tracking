@@ -75,10 +75,13 @@ needs the following tags, which most containers already have:
 3. **Google tag for GA4**: Tag type "Google tag", Tag ID `G-XXXXXXXXXX`.
    Trigger: all pages.
 
-Do **not** add "Google Ads Conversion Tracking" or "GA4 Event" tags for the
-plugin's events — the Google tags above already receive them, so every lead
-would be counted twice. Likewise, remove any per-form conversion tags that
-fired on thank-you pages of forms that now use this plugin.
+Do **not** create tags of GTM's built-in types "Google Ads Conversion
+Tracking" or "Google Analytics: GA4 Event" that fire on the plugin's events
+(e.g. a Custom Event trigger on `generate_lead`), which is the usual way to
+track a dataLayer event in GTM. The Google tags above already receive these
+events directly, so every lead would be counted twice. Tags of these types
+for other events are not affected. Per-form conversion tags that fired on
+thank-you pages of forms that now use this plugin can be removed.
 
 To verify, open Tag Assistant (GTM Preview) and consent to tracking in the
 site's consent banner, then submit a configured form. The event list should
