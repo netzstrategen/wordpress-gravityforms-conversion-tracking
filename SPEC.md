@@ -34,7 +34,7 @@ same plugin folder as-is.
 
 Confirmed with the user: plugin lives in this repo for now, namespace
 `Netzstrategen\GravityformsConversionTracking`; it emits `gtag()` commands
-for GA4 and Google Ads plus a plugin-specific dataLayer event; there's no
+for GA4 and Google Ads plus the lead event as a dataLayer event; there's no
 separate "enable tracking" checkbox — filling in both Conversion ID and
 Label *is* the opt-in; AJAX submission (the modern GF default) is the
 primary target, non-AJAX is supported by the same mechanism at no extra
@@ -136,7 +136,7 @@ execution heads off.
 appends an **inert** data island, never an executable script:
 ```html
 <script type="application/json" class="gfct-tracking-data" data-form-id="12">
-{"event":"gravityforms_conversion","lead_event":"generate_lead","form_id":12,"form_title":"...","value":0,"currency":"EUR","google_ads_conversion_id":"123456789","google_ads_conversion_label":"AbC-D_efG0h1I2j3K4","google_ads_send_to":"AW-123456789/AbC-D_efG0h1I2j3K4"}
+{"event":"generate_lead","form_id":12,"form_title":"...","value":0,"currency":"EUR","google_ads_conversion_id":"123456789","google_ads_conversion_label":"AbC-D_efG0h1I2j3K4","google_ads_send_to":"AW-123456789/AbC-D_efG0h1I2j3K4"}
 </script>
 ```
 `type="application/json"` is never parsed/executed as JS by any browser, in
@@ -205,12 +205,11 @@ an optional prefix; the dataLayer carries the bare number (what GTM's
 Google Ads Conversion Tracking tag expects), and `google_ads_send_to` the
 prefixed `AW-{id}/{label}` for `gtag()`.
 
-**dataLayer push** — plugin-specific event for custom tags and non-Google
-tools:
+**dataLayer push** — the lead event as a standard dataLayer event, for
+custom tags and third-party integrations:
 ```json
 {
-  "event": "gravityforms_conversion",
-  "lead_event": "generate_lead",
+  "event": "generate_lead",
   "form_id": 12,
   "form_title": "Kontaktformular",
   "value": 0,
@@ -220,10 +219,14 @@ tools:
   "google_ads_send_to": "AW-123456789/AbC-D_efG0h1I2j3K4"
 }
 ```
-In 1.0.0 its `event` was the lead event name itself. Renamed in 1.1.0,
-because GTM also exposes each `gtag('event', …)` command as a GTM event of
-the same name — a Custom Event trigger on `generate_lead` would otherwise
-match twice per submission.
+It deliberately uses the GA4 lead event name: third-party tools may pick up
+standard events from the dataLayer without any configuration, like some
+marketing tools already do with `purchase`. Most sites have no lead tracking
+at all, so a standard name is the most useful integration point. Trade-off:
+GTM also exposes each `gtag('event', …)` command as a GTM event of the same
+name, so a Custom Event trigger on `generate_lead` matches twice per
+submission. Neither production site triggers on these events; readme.txt
+tells integrators to check their tags fire only once.
 
 Build the JSON island through a single `wp_json_encode($payload, JSON_HEX_TAG | JSON_HEX_AMP)`
 call (the same flags Gravity Forms core itself uses for its own inline
@@ -250,8 +253,8 @@ a text confirmation.
 
 The 1.0.0 approach — one generic Google Ads Conversion Tracking tag plus a
 GA4 Event tag on a Custom Event trigger, fed by Data Layer Variables — is
-still possible via the `gravityforms_conversion` event for sites without
-Google tags, but is no longer the recommended setup.
+still possible via the dataLayer lead event for sites without Google tags,
+but is no longer the recommended setup.
 
 ### 6. Which GA4 lead events, and their parameters
 
@@ -332,10 +335,10 @@ per-site logic.
 5. Leave Conversion ID/Label empty on a form and confirm no data island and
    no dataLayer push happen at all (opt-in gate).
 6. With the Google tags from §5 in place and consent granted, use GTM
-   Preview mode (Tag Assistant): submit the test form, confirm the events
-   `gravityforms_conversion`, the lead event and `conversion` appear once
-   each, and the Google Ads and GA4 destinations list the corresponding
-   hits.
+   Preview mode (Tag Assistant): submit the test form, confirm the lead
+   event appears twice (dataLayer event and `gtag()` command) and
+   `conversion` once, and the Google Ads and GA4 destinations list one hit
+   each.
 7. Repeat on a second form with different Conversion ID/Label/value/currency
    with zero further GTM changes — the core acceptance criterion.
 8. Confirm the existing, still-active

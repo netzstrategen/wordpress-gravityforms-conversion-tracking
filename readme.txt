@@ -27,9 +27,10 @@ page — whether those are embedded via `gtag.js` (e.g. by Google Site Kit)
 or deployed via Google Tag Manager. No per-form tags, triggers or thank-you
 pages are needed.
 
-Additionally, a plugin-specific `gravityforms_conversion` event with all
-parameters is pushed to `window.dataLayer`, for custom tags and non-Google
-tools (see "Tracking setup").
+Additionally, the lead event is pushed to `window.dataLayer` as a standard
+event with all parameters (`{event: 'generate_lead', form_id: …}`), for
+custom tags and third-party tools that pick up standard events from the
+dataLayer (see "Tracking setup").
 
 The events are always sent from the top-level page, never from inside
 Gravity Forms' hidden AJAX iframe — see SPEC.md for why that distinction
@@ -81,15 +82,17 @@ fired on thank-you pages of forms that now use this plugin.
 
 To verify, open Tag Assistant (GTM Preview) and consent to tracking in the
 site's consent banner, then submit a configured form. The event list should
-show `gravityforms_conversion`, the lead event (e.g. `generate_lead`) and
-`conversion`, and the Google Ads/GA4 destinations should list the
-corresponding hits.
+show the lead event (e.g. `generate_lead`) twice — the dataLayer event and
+the `gtag()` command — followed by `conversion`, and the Google Ads/GA4
+destinations should list the corresponding hits.
 
 Optional — custom tags: to forward the lead to other tools, create a Custom
-Event trigger for the event name `gravityforms_conversion` and Data Layer
-Variables for any of its keys: `lead_event`, `form_id`, `form_title`,
-`value`, `currency`, `google_ads_conversion_id`,
-`google_ads_conversion_label`, `google_ads_send_to`.
+Event trigger for the lead event name and Data Layer Variables for any of
+its keys: `form_id`, `form_title`, `value`, `currency`,
+`google_ads_conversion_id`, `google_ads_conversion_label`,
+`google_ads_send_to`. Because Google Tag Manager also lists the `gtag()`
+command of the same name as an event, such a trigger matches twice per
+submission; check in Tag Assistant that your tags fire only once.
 
 = gtag.js (e.g. Google Site Kit, without Google Tag Manager) =
 
@@ -132,10 +135,9 @@ The form's confirmation must be of type "Text".
 * Google Ads conversion and GA4 lead event are sent as gtag() commands even
   if the page does not define window.gtag, so that Google tags deployed via
   Google Tag Manager receive them without further tags or triggers.
-* The plugin's own dataLayer event is renamed to `gravityforms_conversion`
-  (lead event name in `lead_event`), so that Google Tag Manager triggers do
-  not match both it and the gtag() command of the same name.
-* Conversion ID is accepted with or without the `AW-` prefix.
+* Conversion ID is accepted with or without the `AW-` prefix. The dataLayer
+  event carries the bare number in `google_ads_conversion_id` and the
+  prefixed `AW-{id}/{label}` in the new `google_ads_send_to`.
 
 = 1.0.0 =
 * Initial release.

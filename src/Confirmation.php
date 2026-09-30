@@ -20,17 +20,6 @@ class Confirmation {
   const ISLAND_CLASS = 'gfct-tracking-data';
 
   /**
-   * Name of the plugin's own dataLayer event.
-   *
-   * Deliberately not the GA4 lead event name: Google Tag Manager exposes
-   * the gtag() commands sent alongside as events of their own name, so a
-   * trigger on the lead event name would otherwise match twice.
-   *
-   * @var string
-   */
-  const DATALAYER_EVENT = 'gravityforms_conversion';
-
-  /**
    * @implements gform_confirmation
    */
   public static function injectDataIsland($confirmation, $form, $entry, $ajax) {
@@ -107,8 +96,7 @@ class Confirmation {
     }
 
     return [
-      'event' => static::DATALAYER_EVENT,
-      'lead_event' => $eventName,
+      'event' => $eventName,
       'form_id' => (int) rgar($form, 'id'),
       'form_title' => (string) rgar($form, 'title'),
       'value' => $value,

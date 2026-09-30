@@ -38,11 +38,12 @@
 
     window.dataLayer = window.dataLayer || [];
 
-    // Plugin-specific event for custom tags and non-Google tools.
+    // Standard lead event with all parameters, for custom tags and third-party
+    // tools reading standard events from the dataLayer.
     window.dataLayer.push(payload);
 
     // GA4: recommended lead event, sent to all configured Google tags.
-    gtagCommand('event', payload.lead_event, {
+    gtagCommand('event', payload.event, {
       value: payload.value,
       currency: payload.currency
     });
