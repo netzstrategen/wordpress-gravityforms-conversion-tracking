@@ -2,7 +2,7 @@
 
 /*
   Plugin Name: Gravity Forms Conversion Tracking
-  Version: 1.0.0
+  Version: 1.1.0
   Requires Plugins: gravityforms
   Text Domain: gravityforms-conversion-tracking
   Description: Per-form Google Ads/GA4 lead-conversion tracking for Gravity Forms text confirmations.

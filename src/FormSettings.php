@@ -23,14 +23,14 @@ class FormSettings {
           'name' => 'googleAdsConversionId',
           'type' => 'text',
           'label' => esc_html__('Google Ads Conversion ID', 'gravityforms-conversion-tracking'),
-          'tooltip' => esc_html__('E.g. AW-123456789. Leave this and the Conversion Label empty to disable tracking for this form.', 'gravityforms-conversion-tracking'),
+          'tooltip' => esc_html__('E.g. 123456789, with or without the AW- prefix. Leave this and the Conversion Label empty to disable tracking for this form.', 'gravityforms-conversion-tracking'),
           'class' => 'medium',
         ],
         [
           'name' => 'googleAdsConversionLabel',
           'type' => 'text',
           'label' => esc_html__('Google Ads Conversion Label', 'gravityforms-conversion-tracking'),
-          'tooltip' => esc_html__('E.g. AbC-D_efG0h1I2j3K4.', 'gravityforms-conversion-tracking'),
+          'tooltip' => esc_html__('E.g. AbC-D_efG0h1I2j3K4. Copy and paste it from Google Ads instead of typing it: labels are case-sensitive, and 0 (zero) and O look alike.', 'gravityforms-conversion-tracking'),
           'class' => 'medium',
         ],
         [

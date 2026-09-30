@@ -71,7 +71,10 @@ class Confirmation {
    * only shape what gets fired once opted in.
    */
   protected static function buildPayload($form) {
-    $conversionId = trim((string) rgar($form, 'googleAdsConversionId'));
+    // Google Ads shows the Conversion ID with or without its "AW-" prefix,
+    // depending on the screen it is copied from. GTM's Google Ads Conversion
+    // Tracking tag expects the bare number, gtag() the prefixed form.
+    $conversionId = preg_replace('@^AW-@i', '', trim((string) rgar($form, 'googleAdsConversionId')));
     $conversionLabel = trim((string) rgar($form, 'googleAdsConversionLabel'));
     if ($conversionId === '' || $conversionLabel === '') {
       return NULL;
@@ -100,6 +103,7 @@ class Confirmation {
       'currency' => $currency,
       'google_ads_conversion_id' => $conversionId,
       'google_ads_conversion_label' => $conversionLabel,
+      'google_ads_send_to' => 'AW-' . $conversionId . '/' . $conversionLabel,
     ];
   }
 
