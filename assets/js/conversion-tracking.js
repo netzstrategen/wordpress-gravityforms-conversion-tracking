@@ -22,6 +22,16 @@
     }
   }
 
+  // Returns the IDs of all loaded GA4 Google tags. A gtag() command without
+  // send_to only reaches Google tags configured via gtag('config') on the page
+  // itself, not Google tags deployed via Google Tag Manager. Google's tag
+  // library registers every loaded Google tag in window.google_tag_manager.
+  function ga4Destinations() {
+    return Object.keys(window.google_tag_manager || {}).filter(function (id) {
+      return /^G-/.test(id);
+    });
+  }
+
   function fireEvent(island) {
     if (island.getAttribute('data-gfct-fired')) {
       return;
@@ -42,11 +52,17 @@
     // tools reading standard events from the dataLayer.
     window.dataLayer.push(payload);
 
-    // GA4: recommended lead event, sent to all configured Google tags.
-    gtagCommand('event', payload.event, {
+    // GA4: recommended lead event. Falls back to the default routing to all
+    // configured Google tags if no GA4 Google tag is detected.
+    var ga4Params = {
       value: payload.value,
       currency: payload.currency
-    });
+    };
+    var ga4Ids = ga4Destinations();
+    if (ga4Ids.length) {
+      ga4Params.send_to = ga4Ids;
+    }
+    gtagCommand('event', payload.event, ga4Params);
 
     // Google Ads: the conversion action itself. Only sent once the Google tag
     // for the Ads account is loaded, i.e. subject to its consent handling.

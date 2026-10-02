@@ -4,7 +4,7 @@ Requires Plugins: gravityforms
 Requires at least: 6.5
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: GPL-2.0+
 License URI: http://www.gnu.org/licenses/gpl-2.0
 
@@ -24,8 +24,10 @@ confirmation is shown, the plugin sends:
 
 both as `gtag()` commands, which are processed by the Google tags on the
 page — whether those are embedded via `gtag.js` (e.g. by Google Site Kit)
-or deployed via Google Tag Manager. No per-form tags, triggers or thank-you
-pages are needed.
+or deployed via Google Tag Manager. The lead event is addressed to all GA4
+Google tags detected on the page, since Google tags deployed via Google Tag
+Manager ignore `gtag()` events without an explicit destination. No per-form
+tags, triggers or thank-you pages are needed.
 
 Additionally, the lead event is pushed to `window.dataLayer` as a standard
 event with all parameters (`{event: 'generate_lead', form_id: …}`), for
@@ -133,6 +135,11 @@ Conversion Tracking":
 The form's confirmation must be of type "Text".
 
 == Changelog ==
+
+= 1.1.1 =
+* GA4 lead event did not reach GA4 on sites loading Google tags via Google
+  Tag Manager. It is now addressed to all GA4 Google tags detected on the
+  page.
 
 = 1.1.0 =
 * Google Ads conversion and GA4 lead event are sent as gtag() commands even

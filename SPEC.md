@@ -199,6 +199,22 @@ objects, not arrays). The Ads conversion is only sent once a Google tag for
 the Ads account (`AW-…`) is loaded, so it inherits that tag's consent
 handling.
 
+*Revised in 1.1.1*: in production, the Ads `conversion` command reached
+Google Ads, but the GA4 lead event reached no Google tag at all — no GA4 hit
+(GA4 was served via a first-party server-side endpoint), and no hit to the
+Ads tag either. The difference: `conversion` names its destination via
+`send_to`, the lead event did not. A command without `send_to` is routed
+only to Google tags configured via `gtag('config', …)` on the page itself,
+which GTM-deployed Google tags are not (GTM configures them internally).
+The `get` command used for the verification above names its target
+explicitly, so it could not reveal this. The script now addresses the lead
+event to all loaded GA4 Google tags — the `G-…` keys of
+`window.google_tag_manager`, where Google's tag library registers every
+loaded Google tag — and only falls back to the default routing if none is
+found. `google_tag_manager` is not documented officially, but has been
+stable for many years; without it, the fallback still serves `gtag.js`
+sites.
+
 **Conversion ID normalization** (1.1.0): Google Ads shows the ID with or
 without the `AW-` prefix, depending on the screen. `buildPayload()` strips
 an optional prefix; the dataLayer carries the bare number (what GTM's
