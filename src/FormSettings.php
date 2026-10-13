@@ -23,7 +23,7 @@ class FormSettings {
           'name' => 'googleAdsConversionId',
           'type' => 'text',
           'label' => esc_html__('Google Ads Conversion ID', 'gravityforms-conversion-tracking'),
-          'tooltip' => esc_html__('E.g. 123456789, with or without the AW- prefix. Leave this and the Conversion Label empty to disable tracking for this form.', 'gravityforms-conversion-tracking'),
+          'tooltip' => esc_html__('E.g. 123456789, with or without the AW- prefix. Leave this and the Conversion Label empty to not send a Google Ads conversion for this form.', 'gravityforms-conversion-tracking'),
           'class' => 'medium',
         ],
         [
@@ -37,9 +37,13 @@ class FormSettings {
           'name' => 'leadEventName',
           'type' => 'select',
           'label' => esc_html__('Lead stage', 'gravityforms-conversion-tracking'),
-          'tooltip' => esc_html__('Which GA4 lead-funnel event this form submission represents.', 'gravityforms-conversion-tracking'),
-          'default_value' => 'generate_lead',
+          'tooltip' => esc_html__('Which GA4 lead-funnel event this form submission represents. Select none to not send a GA4 event for this form.', 'gravityforms-conversion-tracking'),
+          'default_value' => '',
           'choices' => [
+            [
+              'label' => esc_html__('None', 'gravityforms-conversion-tracking'),
+              'value' => '',
+            ],
             [
               'label' => esc_html__('General inquiry (generate_lead)', 'gravityforms-conversion-tracking'),
               'value' => 'generate_lead',

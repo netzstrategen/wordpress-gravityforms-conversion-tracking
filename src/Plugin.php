@@ -16,6 +16,10 @@ class Plugin {
    * @implements init
    */
   public static function init() {
+    // Remove lead stages stored as former default on unconfigured forms,
+    // before they would start sending GA4 events.
+    Upgrade::run();
+
     // Add Conversion ID/Label/lead-stage/value/currency fields to each
     // form's own Form Settings page.
     add_filter('gform_form_settings_fields', __NAMESPACE__ . '\FormSettings::addFields', 10, 2);

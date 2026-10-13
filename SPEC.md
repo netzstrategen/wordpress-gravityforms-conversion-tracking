@@ -108,6 +108,11 @@ only when **both** `googleAdsConversionId` and `googleAdsConversionLabel`
 are non-empty on `$form` — simplest correct behavior, avoids a
 half-configured state that's hard to notice in the admin UI.
 
+*Revised in 1.2.0:* the lead stage defaults to "None" and alone enables
+the GA4 lead event; Conversion ID and Label alone enable the Google Ads
+conversion. A one-time update removes the former `generate_lead` default
+from forms without Conversion ID and Label.
+
 **Why not an inline `<script>` in the confirmation content** (the original,
 now-superseded design, and the technique the currently-active MediaRon
 plugin uses): a targeted investigation of Gravity Forms' own AJAX transport

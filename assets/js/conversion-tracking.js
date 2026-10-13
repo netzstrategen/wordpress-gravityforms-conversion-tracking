@@ -48,29 +48,33 @@
 
     window.dataLayer = window.dataLayer || [];
 
-    // Standard lead event with all parameters, for custom tags and third-party
-    // tools reading standard events from the dataLayer.
-    window.dataLayer.push(payload);
+    if (payload.event) {
+      // Standard lead event with all parameters, for custom tags and
+      // third-party tools reading standard events from the dataLayer.
+      window.dataLayer.push(payload);
 
-    // GA4: recommended lead event. Falls back to the default routing to all
-    // configured Google tags if no GA4 Google tag is detected.
-    var ga4Params = {
-      value: payload.value,
-      currency: payload.currency
-    };
-    var ga4Ids = ga4Destinations();
-    if (ga4Ids.length) {
-      ga4Params.send_to = ga4Ids;
+      // GA4: recommended lead event. Falls back to the default routing to all
+      // configured Google tags if no GA4 Google tag is detected.
+      var ga4Params = {
+        value: payload.value,
+        currency: payload.currency
+      };
+      var ga4Ids = ga4Destinations();
+      if (ga4Ids.length) {
+        ga4Params.send_to = ga4Ids;
+      }
+      gtagCommand('event', payload.event, ga4Params);
     }
-    gtagCommand('event', payload.event, ga4Params);
 
     // Google Ads: the conversion action itself. Only sent once the Google tag
     // for the Ads account is loaded, i.e. subject to its consent handling.
-    gtagCommand('event', 'conversion', {
-      send_to: payload.google_ads_send_to,
-      value: payload.value,
-      currency: payload.currency
-    });
+    if (payload.google_ads_send_to) {
+      gtagCommand('event', 'conversion', {
+        send_to: payload.google_ads_send_to,
+        value: payload.value,
+        currency: payload.currency
+      });
+    }
   }
 
   function fireForForm(formId) {
