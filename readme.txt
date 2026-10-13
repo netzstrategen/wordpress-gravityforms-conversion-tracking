@@ -4,7 +4,7 @@ Requires Plugins: gravityforms
 Requires at least: 6.5
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 1.1.1
+Stable tag: 1.2.0
 License: GPL-2.0+
 License URI: http://www.gnu.org/licenses/gpl-2.0
 
@@ -18,9 +18,10 @@ stage, value, currency). When that form is submitted and its text
 confirmation is shown, the plugin sends:
 
 * the GA4 recommended lead event (`generate_lead`, `qualify_lead` or
-  `working_lead`, as selected per form) with `value` and `currency`,
+  `working_lead`, as selected per form) with `value` and `currency`, if a
+  lead stage is selected,
 * the Google Ads conversion (`send_to: 'AW-{Conversion ID}/{Conversion Label}'`)
-  with `value` and `currency`,
+  with `value` and `currency`, if the Conversion ID and Label are filled in,
 
 both as `gtag()` commands, which are processed by the Google tags on the
 page — whether those are embedded via `gtag.js` (e.g. by Google Site Kit)
@@ -120,21 +121,33 @@ every lead twice.
 On a form's Settings → Form Settings page, section "Google Ads / GA4
 Conversion Tracking":
 
+* **Lead stage**: the GA4 lead event to send — `generate_lead` (general
+  inquiry), `qualify_lead` (qualified sales inquiry) or `working_lead`
+  (customer support contact). Defaults to "None", which sends no GA4 event
+  and no dataLayer event. A lead stage works with or without Google Ads.
+* **Lead value** and **Currency**: sent with both the GA4 event and the
+  Google Ads conversion; `0` is valid. Currency defaults to `EUR`.
 * **Google Ads Conversion ID** and **Conversion Label**: in Google Ads,
   open Goals → Conversions → Summary → the conversion action → Tag setup →
   "Use Google Tag Manager", and copy both values from there. The ID may be
   entered with or without the `AW-` prefix. Paste the label instead of
   typing it: labels are case-sensitive, and `0` (zero) and `O` look alike.
-  Tracking is only active when both fields are filled in.
-* **Lead stage**: the GA4 lead event to send — `generate_lead` (general
-  inquiry), `qualify_lead` (qualified sales inquiry) or `working_lead`
-  (customer support contact).
-* **Lead value** and **Currency**: sent with both the GA4 event and the
-  Google Ads conversion; `0` is valid. Currency defaults to `EUR`.
+  The Google Ads conversion is only sent when both fields are filled in.
 
 The form's confirmation must be of type "Text".
 
 == Changelog ==
+
+= 1.2.0 =
+* GA4 lead event is sent without a Google Ads conversion, if a lead stage
+  is selected. Google Ads conversions no longer require a lead stage.
+* Lead stage defaults to "None" instead of `generate_lead`. Earlier versions
+  stored the former default with every saved form, which would otherwise
+  start sending GA4 events. On the first request after the update, the
+  plugin removes the lead stage from all forms without Conversion ID and
+  Label.
+* Form settings list the lead stage, value and currency first, followed by
+  the optional Google Ads Conversion ID and Label.
 
 = 1.1.1 =
 * GA4 lead event did not reach GA4 on sites loading Google tags via Google

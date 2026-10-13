@@ -66,23 +66,26 @@ class Confirmation {
    * Builds the tracking payload for a form, or NULL if tracking is not
    * configured for it.
    *
-   * Presence of both the Conversion ID and Label is the single opt-in
-   * signal for the whole feature; the lead stage/value/currency fields
-   * only shape what gets fired once opted in.
+   * The selected lead stage enables the GA4 lead event, and the presence of
+   * both the Conversion ID and Label enables the Google Ads conversion; each
+   * is sent independently of the other. The value/currency fields only shape
+   * what gets fired.
    */
   protected static function buildPayload($form) {
+    $eventName = (string) rgar($form, 'leadEventName');
+    if (!in_array($eventName, ['generate_lead', 'qualify_lead', 'working_lead'], TRUE)) {
+      $eventName = '';
+    }
+
     // Google Ads shows the Conversion ID with or without its "AW-" prefix,
     // depending on the screen it is copied from. GTM's Google Ads Conversion
     // Tracking tag expects the bare number, gtag() the prefixed form.
     $conversionId = preg_replace('@^AW-@i', '', trim((string) rgar($form, 'googleAdsConversionId')));
     $conversionLabel = trim((string) rgar($form, 'googleAdsConversionLabel'));
-    if ($conversionId === '' || $conversionLabel === '') {
-      return NULL;
-    }
+    $hasGoogleAds = $conversionId !== '' && $conversionLabel !== '';
 
-    $eventName = (string) rgar($form, 'leadEventName');
-    if (!in_array($eventName, ['generate_lead', 'qualify_lead', 'working_lead'], TRUE)) {
-      $eventName = 'generate_lead';
+    if ($eventName === '' && !$hasGoogleAds) {
+      return NULL;
     }
 
     // is_numeric(), not empty(): '0' is a valid, intentional lead value and
@@ -95,16 +98,24 @@ class Confirmation {
       $currency = 'EUR';
     }
 
-    return [
-      'event' => $eventName,
+    $payload = [];
+    if ($eventName !== '') {
+      $payload['event'] = $eventName;
+    }
+    $payload += [
       'form_id' => (int) rgar($form, 'id'),
       'form_title' => (string) rgar($form, 'title'),
       'value' => $value,
       'currency' => $currency,
-      'google_ads_conversion_id' => $conversionId,
-      'google_ads_conversion_label' => $conversionLabel,
-      'google_ads_send_to' => 'AW-' . $conversionId . '/' . $conversionLabel,
     ];
+    if ($hasGoogleAds) {
+      $payload += [
+        'google_ads_conversion_id' => $conversionId,
+        'google_ads_conversion_label' => $conversionLabel,
+        'google_ads_send_to' => 'AW-' . $conversionId . '/' . $conversionLabel,
+      ];
+    }
+    return $payload;
   }
 
 }
