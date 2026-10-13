@@ -16,31 +16,14 @@ use GFFormsModel;
 class Upgrade {
 
   /**
-   * Option storing the last applied schema version.
-   *
-   * @var string
-   */
-  const OPTION = 'gravityforms_conversion_tracking_schema';
-
-  /**
-   * Current schema version.
-   *
-   * @var int
-   */
-  const SCHEMA = 1;
-
-  /**
    * Applies all pending updates.
    */
   public static function run() {
-    $schema = (int) get_option(static::OPTION, 0);
-    if ($schema >= static::SCHEMA) {
-      return;
-    }
+    $schema = (int) get_option(Plugin::SCHEMA_OPTION, 0);
     if ($schema < 1) {
       static::removeUnusedLeadStages();
     }
-    update_option(static::OPTION, static::SCHEMA, TRUE);
+    update_option(Plugin::SCHEMA_OPTION, Plugin::SCHEMA, TRUE);
   }
 
   /**

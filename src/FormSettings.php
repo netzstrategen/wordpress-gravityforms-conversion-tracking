@@ -20,20 +20,6 @@ class FormSettings {
       'title' => esc_html__('Google Ads / GA4 Conversion Tracking', 'gravityforms-conversion-tracking'),
       'fields' => [
         [
-          'name' => 'googleAdsConversionId',
-          'type' => 'text',
-          'label' => esc_html__('Google Ads Conversion ID', 'gravityforms-conversion-tracking'),
-          'tooltip' => esc_html__('E.g. 123456789, with or without the AW- prefix. Leave this and the Conversion Label empty to not send a Google Ads conversion for this form.', 'gravityforms-conversion-tracking'),
-          'class' => 'medium',
-        ],
-        [
-          'name' => 'googleAdsConversionLabel',
-          'type' => 'text',
-          'label' => esc_html__('Google Ads Conversion Label', 'gravityforms-conversion-tracking'),
-          'tooltip' => esc_html__('E.g. AbC-D_efG0h1I2j3K4. Copy and paste it from Google Ads instead of typing it: labels are case-sensitive, and 0 (zero) and O look alike.', 'gravityforms-conversion-tracking'),
-          'class' => 'medium',
-        ],
-        [
           'name' => 'leadEventName',
           'type' => 'select',
           'label' => esc_html__('Lead stage', 'gravityforms-conversion-tracking'),
@@ -74,6 +60,20 @@ class FormSettings {
           'tooltip' => esc_html__('ISO 4217 currency code, e.g. EUR.', 'gravityforms-conversion-tracking'),
           'default_value' => 'EUR',
           'class' => 'small',
+        ],
+        [
+          'name' => 'googleAdsConversionId',
+          'type' => 'text',
+          'label' => esc_html__('Google Ads Conversion ID', 'gravityforms-conversion-tracking'),
+          'tooltip' => esc_html__('E.g. 123456789, with or without the AW- prefix. Leave this and the Conversion Label empty to not send a Google Ads conversion for this form.', 'gravityforms-conversion-tracking'),
+          'class' => 'medium',
+        ],
+        [
+          'name' => 'googleAdsConversionLabel',
+          'type' => 'text',
+          'label' => esc_html__('Google Ads Conversion Label', 'gravityforms-conversion-tracking'),
+          'tooltip' => esc_html__('E.g. AbC-D_efG0h1I2j3K4. Copy and paste it from Google Ads instead of typing it: labels are case-sensitive, and 0 (zero) and O look alike.', 'gravityforms-conversion-tracking'),
+          'class' => 'medium',
         ],
       ],
     ];

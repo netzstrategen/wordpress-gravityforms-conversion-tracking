@@ -121,18 +121,18 @@ every lead twice.
 On a form's Settings → Form Settings page, section "Google Ads / GA4
 Conversion Tracking":
 
-* **Google Ads Conversion ID** and **Conversion Label**: in Google Ads,
-  open Goals → Conversions → Summary → the conversion action → Tag setup →
-  "Use Google Tag Manager", and copy both values from there. The ID may be
-  entered with or without the `AW-` prefix. Paste the label instead of
-  typing it: labels are case-sensitive, and `0` (zero) and `O` look alike.
-  The Google Ads conversion is only sent when both fields are filled in.
 * **Lead stage**: the GA4 lead event to send — `generate_lead` (general
   inquiry), `qualify_lead` (qualified sales inquiry) or `working_lead`
   (customer support contact). Defaults to "None", which sends no GA4 event
   and no dataLayer event. A lead stage works with or without Google Ads.
 * **Lead value** and **Currency**: sent with both the GA4 event and the
   Google Ads conversion; `0` is valid. Currency defaults to `EUR`.
+* **Google Ads Conversion ID** and **Conversion Label**: in Google Ads,
+  open Goals → Conversions → Summary → the conversion action → Tag setup →
+  "Use Google Tag Manager", and copy both values from there. The ID may be
+  entered with or without the `AW-` prefix. Paste the label instead of
+  typing it: labels are case-sensitive, and `0` (zero) and `O` look alike.
+  The Google Ads conversion is only sent when both fields are filled in.
 
 The form's confirmation must be of type "Text".
 
@@ -141,10 +141,13 @@ The form's confirmation must be of type "Text".
 = 1.2.0 =
 * GA4 lead event is sent without a Google Ads conversion, if a lead stage
   is selected. Google Ads conversions no longer require a lead stage.
-* Lead stage defaults to "None" instead of `generate_lead`. On update, the
-  lead stage is removed from all forms without Conversion ID and Label,
-  since earlier versions stored the former default with every saved form,
-  which would otherwise start sending GA4 events.
+* Lead stage defaults to "None" instead of `generate_lead`. Earlier versions
+  stored the former default with every saved form, which would otherwise
+  start sending GA4 events. On the first request after the update, the
+  plugin removes the lead stage from all forms without Conversion ID and
+  Label.
+* Form settings list the lead stage, value and currency first, followed by
+  the optional Google Ads Conversion ID and Label.
 
 = 1.1.1 =
 * GA4 lead event did not reach GA4 on sites loading Google tags via Google
